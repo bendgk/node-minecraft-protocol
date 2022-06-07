@@ -84,37 +84,50 @@ class Client extends EventEmitter {
     })
 
     this.deserializer.on('data', (parsed) => {
-      if (this.spoofedLatency === 0) {
-        parsed.metadata.name = parsed.data.name
-        parsed.data = parsed.data.params
-        parsed.metadata.state = state
-        debug('read packet ' + state + '.' + parsed.metadata.name)
-        if (debug.enabled) {
-          const s = JSON.stringify(parsed.data, null, 2)
-          debug(s && s.length > 10000 ? parsed.data : s)
-        }
-        this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-        this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-        this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-        this.emit('raw', parsed.buffer, parsed.metadata)
-      }
+      // if (this.spoofedLatency === 0) {
+      //   parsed.metadata.name = parsed.data.name
+      //   parsed.data = parsed.data.params
+      //   parsed.metadata.state = state
+      //   debug('read packet ' + state + '.' + parsed.metadata.name)
+      //   if (debug.enabled) {
+      //     const s = JSON.stringify(parsed.data, null, 2)
+      //     debug(s && s.length > 10000 ? parsed.data : s)
+      //   }
+      //   this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+      //   this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+      //   this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+      //   this.emit('raw', parsed.buffer, parsed.metadata)
+      // }
 
-      else {
-        setTimeout(() => {
-          parsed.metadata.name = parsed.data.name
-          parsed.data = parsed.data.params
-          parsed.metadata.state = state
-          debug('read packet ' + state + '.' + parsed.metadata.name)
-          if (debug.enabled) {
-            const s = JSON.stringify(parsed.data, null, 2)
-            debug(s && s.length > 10000 ? parsed.data : s)
-          }
-          this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-          this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-          this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-          this.emit('raw', parsed.buffer, parsed.metadata)
-        }, Math.floor(this.spoofedLatency / 2))
+      parsed.metadata.name = parsed.data.name
+      parsed.data = parsed.data.params
+      parsed.metadata.state = state
+      debug('read packet ' + state + '.' + parsed.metadata.name)
+      if (debug.enabled) {
+        const s = JSON.stringify(parsed.data, null, 2)
+        debug(s && s.length > 10000 ? parsed.data : s)
       }
+      this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+      this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+      this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+      this.emit('raw', parsed.buffer, parsed.metadata)
+
+      // else {
+      //   setTimeout(() => {
+      //     parsed.metadata.name = parsed.data.name
+      //     parsed.data = parsed.data.params
+      //     parsed.metadata.state = state
+      //     debug('read packet ' + state + '.' + parsed.metadata.name)
+      //     if (debug.enabled) {
+      //       const s = JSON.stringify(parsed.data, null, 2)
+      //       debug(s && s.length > 10000 ? parsed.data : s)
+      //     }
+      //     this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+      //     this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+      //     this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+      //     this.emit('raw', parsed.buffer, parsed.metadata)
+      //   }, Math.floor(this.spoofedLatency / 2))
+      // }
     })
   }
 
@@ -252,7 +265,7 @@ class Client extends EventEmitter {
         debug('writing packet ' + this.state + '.' + name)
         debug(params)
         this.serializer.write({ name, params })
-      }, Math.floor(this.spoofedLatency/2))
+      }, Math.floor(this.spoofedLatency))
     }
   }
 
@@ -268,7 +281,7 @@ class Client extends EventEmitter {
         const stream = this.compressor === null ? this.framer : this.compressor
         if (!stream.writable) { return }
         stream.write(buffer)
-      }, Math.floor(this.spoofedLatency/2))
+      }, Math.floor(this.spoofedLatency))
     }
   }
 
