@@ -84,31 +84,23 @@ class Client extends EventEmitter {
     })
 
     this.deserializer.on('data', (parsed) => {
+      parsed.metadata.name = parsed.data.name
+      parsed.data = parsed.data.params
+      parsed.metadata.state = state
+      debug('read packet ' + state + '.' + parsed.metadata.name)
+      if (debug.enabled) {
+        const s = JSON.stringify(parsed.data, null, 2)
+        debug(s && s.length > 10000 ? parsed.data : s)
+      }
+
       if (this.spoofedLatency === 0) {
-        parsed.metadata.name = parsed.data.name
-        parsed.data = parsed.data.params
-        parsed.metadata.state = state
-        debug('read packet ' + state + '.' + parsed.metadata.name)
-        if (debug.enabled) {
-          const s = JSON.stringify(parsed.data, null, 2)
-          debug(s && s.length > 10000 ? parsed.data : s)
-        }
         this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
         this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
         this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
         this.emit('raw', parsed.buffer, parsed.metadata)
       }
-
       else {
         setTimeout(() => {
-          parsed.metadata.name = parsed.data.name
-          parsed.data = parsed.data.params
-          parsed.metadata.state = state
-          debug('read packet ' + state + '.' + parsed.metadata.name)
-          if (debug.enabled) {
-            const s = JSON.stringify(parsed.data, null, 2)
-            debug(s && s.length > 10000 ? parsed.data : s)
-          }
           this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
           this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
           this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
