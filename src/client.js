@@ -84,50 +84,37 @@ class Client extends EventEmitter {
     })
 
     this.deserializer.on('data', (parsed) => {
-      // if (this.spoofedLatency === 0) {
-      //   parsed.metadata.name = parsed.data.name
-      //   parsed.data = parsed.data.params
-      //   parsed.metadata.state = state
-      //   debug('read packet ' + state + '.' + parsed.metadata.name)
-      //   if (debug.enabled) {
-      //     const s = JSON.stringify(parsed.data, null, 2)
-      //     debug(s && s.length > 10000 ? parsed.data : s)
-      //   }
-      //   this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-      //   this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-      //   this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-      //   this.emit('raw', parsed.buffer, parsed.metadata)
-      // }
-
-      parsed.metadata.name = parsed.data.name
-      parsed.data = parsed.data.params
-      parsed.metadata.state = state
-      debug('read packet ' + state + '.' + parsed.metadata.name)
-      if (debug.enabled) {
-        const s = JSON.stringify(parsed.data, null, 2)
-        debug(s && s.length > 10000 ? parsed.data : s)
+      if (this.spoofedLatency === 0) {
+        parsed.metadata.name = parsed.data.name
+        parsed.data = parsed.data.params
+        parsed.metadata.state = state
+        debug('read packet ' + state + '.' + parsed.metadata.name)
+        if (debug.enabled) {
+          const s = JSON.stringify(parsed.data, null, 2)
+          debug(s && s.length > 10000 ? parsed.data : s)
+        }
+        this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+        this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+        this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+        this.emit('raw', parsed.buffer, parsed.metadata)
       }
-      this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-      this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-      this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-      this.emit('raw', parsed.buffer, parsed.metadata)
 
-      // else {
-      //   setTimeout(() => {
-      //     parsed.metadata.name = parsed.data.name
-      //     parsed.data = parsed.data.params
-      //     parsed.metadata.state = state
-      //     debug('read packet ' + state + '.' + parsed.metadata.name)
-      //     if (debug.enabled) {
-      //       const s = JSON.stringify(parsed.data, null, 2)
-      //       debug(s && s.length > 10000 ? parsed.data : s)
-      //     }
-      //     this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-      //     this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-      //     this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-      //     this.emit('raw', parsed.buffer, parsed.metadata)
-      //   }, Math.floor(this.spoofedLatency / 2))
-      // }
+      else {
+        setTimeout(() => {
+          parsed.metadata.name = parsed.data.name
+          parsed.data = parsed.data.params
+          parsed.metadata.state = state
+          debug('read packet ' + state + '.' + parsed.metadata.name)
+          if (debug.enabled) {
+            const s = JSON.stringify(parsed.data, null, 2)
+            debug(s && s.length > 10000 ? parsed.data : s)
+          }
+          this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+          this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+          this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+          this.emit('raw', parsed.buffer, parsed.metadata)
+        }, Math.floor(this.spoofedLatency / 2))
+      }
     })
   }
 
@@ -252,37 +239,16 @@ class Client extends EventEmitter {
   }
 
   write (name, params) {
-    if (this.spoofedLatency === 0) {
-      if (!this.serializer.writable) { return }
-      debug('writing packet ' + this.state + '.' + name)
-      debug(params)
-      this.serializer.write({ name, params })
-    }
-
-    else {
-      setTimeout(() => {
-        if (!this.serializer.writable) { return }
-        debug('writing packet ' + this.state + '.' + name)
-        debug(params)
-        this.serializer.write({ name, params })
-      }, Math.floor(this.spoofedLatency))
-    }
+    if (!this.serializer.writable) { return }
+    debug('writing packet ' + this.state + '.' + name)
+    debug(params)
+    this.serializer.write({ name, params })
   }
 
   writeRaw (buffer) {
-    if (this.spoofedLatency === 0) {
-      const stream = this.compressor === null ? this.framer : this.compressor
-      if (!stream.writable) { return }
-      stream.write(buffer)
-    }
-
-    else {
-      setTimeout(() => {
-        const stream = this.compressor === null ? this.framer : this.compressor
-        if (!stream.writable) { return }
-        stream.write(buffer)
-      }, Math.floor(this.spoofedLatency))
-    }
+    const stream = this.compressor === null ? this.framer : this.compressor
+    if (!stream.writable) { return }
+    stream.write(buffer)
   }
 
   // TCP/IP-specific (not generic Stream) method for backwards-compatibility
