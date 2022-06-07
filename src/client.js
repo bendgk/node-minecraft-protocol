@@ -30,6 +30,7 @@ class Client extends EventEmitter {
     this.latency = 0
     this.hideErrors = hideErrors
     this.closeTimer = null
+    this.spoofedLatency = 0
 
     this.state = states.HANDSHAKING
   }
@@ -39,13 +40,17 @@ class Client extends EventEmitter {
   }
 
   setSerializer (state) {
-    this.serializer = createSerializer({ isServer: this.isServer, version: this.version, state: state, customPackets: this.customPackets })
+    this.serializer = createSerializer({
+      isServer: this.isServer,
+      version: this.version,
+      state: state,
+      customPackets: this.customPackets
+    })
     this.deserializer = createDeserializer({
       isServer: this.isServer,
       version: this.version,
       state: state,
-      packetsToParse:
-      this.packetsToParse,
+      packetsToParse: this.packetsToParse,
       customPackets: this.customPackets,
       noErrorLogging: this.hideErrors
     })
@@ -79,18 +84,37 @@ class Client extends EventEmitter {
     })
 
     this.deserializer.on('data', (parsed) => {
-      parsed.metadata.name = parsed.data.name
-      parsed.data = parsed.data.params
-      parsed.metadata.state = state
-      debug('read packet ' + state + '.' + parsed.metadata.name)
-      if (debug.enabled) {
-        const s = JSON.stringify(parsed.data, null, 2)
-        debug(s && s.length > 10000 ? parsed.data : s)
+      if (this.spoofedLatency === 0) {
+        parsed.metadata.name = parsed.data.name
+        parsed.data = parsed.data.params
+        parsed.metadata.state = state
+        debug('read packet ' + state + '.' + parsed.metadata.name)
+        if (debug.enabled) {
+          const s = JSON.stringify(parsed.data, null, 2)
+          debug(s && s.length > 10000 ? parsed.data : s)
+        }
+        this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+        this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+        this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+        this.emit('raw', parsed.buffer, parsed.metadata)
       }
-      this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
-      this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
-      this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
-      this.emit('raw', parsed.buffer, parsed.metadata)
+
+      else {
+        setTimeout(() => {
+          parsed.metadata.name = parsed.data.name
+          parsed.data = parsed.data.params
+          parsed.metadata.state = state
+          debug('read packet ' + state + '.' + parsed.metadata.name)
+          if (debug.enabled) {
+            const s = JSON.stringify(parsed.data, null, 2)
+            debug(s && s.length > 10000 ? parsed.data : s)
+          }
+          this.emit('packet', parsed.data, parsed.metadata, parsed.buffer, parsed.fullBuffer)
+          this.emit(parsed.metadata.name, parsed.data, parsed.metadata)
+          this.emit('raw.' + parsed.metadata.name, parsed.buffer, parsed.metadata)
+          this.emit('raw', parsed.buffer, parsed.metadata)
+        }, Math.floor(this.spoofedLatency / 2))
+      }
     })
   }
 
@@ -215,16 +239,37 @@ class Client extends EventEmitter {
   }
 
   write (name, params) {
-    if (!this.serializer.writable) { return }
-    debug('writing packet ' + this.state + '.' + name)
-    debug(params)
-    this.serializer.write({ name, params })
+    if (this.spoofedLatency === 0) {
+      if (!this.serializer.writable) { return }
+      debug('writing packet ' + this.state + '.' + name)
+      debug(params)
+      this.serializer.write({ name, params })
+    }
+
+    else {
+      setTimeout(() => {
+        if (!this.serializer.writable) { return }
+        debug('writing packet ' + this.state + '.' + name)
+        debug(params)
+        this.serializer.write({ name, params })
+      }, Math.floor(this.spoofedLatency/2))
+    }
   }
 
   writeRaw (buffer) {
-    const stream = this.compressor === null ? this.framer : this.compressor
-    if (!stream.writable) { return }
-    stream.write(buffer)
+    if (this.spoofedLatency === 0) {
+      const stream = this.compressor === null ? this.framer : this.compressor
+      if (!stream.writable) { return }
+      stream.write(buffer)
+    }
+
+    else {
+      setTimeout(() => {
+        const stream = this.compressor === null ? this.framer : this.compressor
+        if (!stream.writable) { return }
+        stream.write(buffer)
+      }, Math.floor(this.spoofedLatency/2))
+    }
   }
 
   // TCP/IP-specific (not generic Stream) method for backwards-compatibility
