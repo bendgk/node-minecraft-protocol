@@ -21,6 +21,7 @@ declare module 'minecraft-protocol' {
 		deserializer: FullPacketParser
 		serializer: Serializer
 		latency: number
+		spoofedLatency: number
 		customPackets: any
 		protocolVersion: number
 		version: string
